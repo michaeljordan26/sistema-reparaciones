@@ -1,0 +1,234 @@
+# Sistema de reparaciones - orquestación local con Docker Compose.
+# Cada microservicio tiene SU PROPIA base de datos (database-per-service).
+# Todos comparten JWT_SECRET_KEY para verificar los tokens emitidos por ms-usuarios
+# y envían su auditoría a ms-reportes (AUDITORIA_URL).
+
+x-jwt: &jwt
+  JWT_SECRET_KEY: ${JWT_SECRET_KEY:-cambia-esta-clave-en-produccion}
+  CORS_ORIGINS: http://localhost:5173
+  AUDITORIA_URL: http://ms-reportes:8007
+
+x-db-env: &db-env
+  POSTGRES_USER: ${DB_USER:-taller}
+  POSTGRES_PASSWORD: ${DB_PASSWORD:-taller123}
+
+services:
+  # ---------- MS1: Usuarios y autenticación ----------
+  db-usuarios:
+    image: postgres:16
+    container_name: db-usuarios
+    environment:
+      <<: *db-env
+      POSTGRES_DB: db_usuarios
+    ports: ["5432:5432"]
+    volumes: [pgdata-usuarios:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -U ${DB_USER:-taller} -d db_usuarios"]
+      interval: 5s
+      retries: 20
+      start_period: 10s
+
+  ms-usuarios:
+    build: ./ms-usuarios
+    container_name: ms-usuarios
+    restart: on-failure
+    environment:
+      <<: *jwt
+      DATABASE_URL: postgresql+psycopg://${DB_USER:-taller}:${DB_PASSWORD:-taller123}@db-usuarios:5432/db_usuarios
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin123*}
+    ports: ["8001:8001"]
+    depends_on:
+      db-usuarios: {condition: service_healthy}
+
+  # ---------- MS2: Clientes y equipos ----------
+  db-clientes:
+    image: postgres:16
+    container_name: db-clientes
+    environment:
+      <<: *db-env
+      POSTGRES_DB: db_clientes
+    ports: ["5433:5432"]
+    volumes: [pgdata-clientes:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -U ${DB_USER:-taller} -d db_clientes"]
+      interval: 5s
+      retries: 20
+      start_period: 10s
+
+  ms-clientes:
+    build: ./ms-clientes
+    container_name: ms-clientes
+    restart: on-failure
+    environment:
+      <<: *jwt
+      DATABASE_URL: postgresql+psycopg://${DB_USER:-taller}:${DB_PASSWORD:-taller123}@db-clientes:5432/db_clientes
+    ports: ["8002:8002"]
+    depends_on:
+      db-clientes: {condition: service_healthy}
+
+  # ---------- MS3: Órdenes de trabajo ----------
+  db-ordenes:
+    image: postgres:16
+    container_name: db-ordenes
+    environment:
+      <<: *db-env
+      POSTGRES_DB: db_ordenes
+    ports: ["5434:5432"]
+    volumes: [pgdata-ordenes:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -U ${DB_USER:-taller} -d db_ordenes"]
+      interval: 5s
+      retries: 20
+      start_period: 10s
+
+  ms-ordenes:
+    build: ./ms-ordenes
+    container_name: ms-ordenes
+    restart: on-failure
+    environment:
+      <<: *jwt
+      DATABASE_URL: postgresql+psycopg://${DB_USER:-taller}:${DB_PASSWORD:-taller123}@db-ordenes:5432/db_ordenes
+      # Dentro de Docker los servicios se llaman por su nombre, no por 127.0.0.1
+      USUARIOS_URL: http://ms-usuarios:8001
+      CLIENTES_URL: http://ms-clientes:8002
+      FACTURACION_URL: http://ms-facturacion:8006
+    ports: ["8003:8003"]
+    depends_on:
+      db-ordenes: {condition: service_healthy}
+      ms-usuarios: {condition: service_started}
+      ms-clientes: {condition: service_started}
+
+  # ---------- MS4: Diagnósticos, reparaciones y garantías ----------
+  db-reparaciones:
+    image: postgres:16
+    container_name: db-reparaciones
+    environment:
+      <<: *db-env
+      POSTGRES_DB: db_reparaciones
+    ports: ["5435:5432"]
+    volumes: [pgdata-reparaciones:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -U ${DB_USER:-taller} -d db_reparaciones"]
+      interval: 5s
+      retries: 20
+      start_period: 10s
+
+  ms-reparaciones:
+    build: ./ms-reparaciones
+    container_name: ms-reparaciones
+    restart: on-failure
+    environment:
+      <<: *jwt
+      DATABASE_URL: postgresql+psycopg://${DB_USER:-taller}:${DB_PASSWORD:-taller123}@db-reparaciones:5432/db_reparaciones
+      USUARIOS_URL: http://ms-usuarios:8001
+      ORDENES_URL: http://ms-ordenes:8003
+      INVENTARIO_URL: http://ms-inventario:8005
+    ports: ["8004:8004"]
+    depends_on:
+      db-reparaciones: {condition: service_healthy}
+      ms-ordenes: {condition: service_started}
+      ms-inventario: {condition: service_started}
+
+  # ---------- MS5: Inventario y repuestos ----------
+  db-inventario:
+    image: postgres:16
+    container_name: db-inventario
+    environment:
+      <<: *db-env
+      POSTGRES_DB: db_inventario
+    ports: ["5436:5432"]
+    volumes: [pgdata-inventario:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -U ${DB_USER:-taller} -d db_inventario"]
+      interval: 5s
+      retries: 20
+      start_period: 10s
+
+  ms-inventario:
+    build: ./ms-inventario
+    container_name: ms-inventario
+    restart: on-failure
+    environment:
+      <<: *jwt
+      DATABASE_URL: postgresql+psycopg://${DB_USER:-taller}:${DB_PASSWORD:-taller123}@db-inventario:5432/db_inventario
+      ORDENES_URL: http://ms-ordenes:8003
+    ports: ["8005:8005"]
+    depends_on:
+      db-inventario: {condition: service_healthy}
+      ms-ordenes: {condition: service_started}
+
+  # ---------- MS6: Presupuestos, facturación y pagos ----------
+  db-facturacion:
+    image: postgres:16
+    container_name: db-facturacion
+    environment:
+      <<: *db-env
+      POSTGRES_DB: db_facturacion
+    ports: ["5437:5432"]
+    volumes: [pgdata-facturacion:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -U ${DB_USER:-taller} -d db_facturacion"]
+      interval: 5s
+      retries: 20
+      start_period: 10s
+
+  ms-facturacion:
+    build: ./ms-facturacion
+    container_name: ms-facturacion
+    restart: on-failure
+    environment:
+      <<: *jwt
+      DATABASE_URL: postgresql+psycopg://${DB_USER:-taller}:${DB_PASSWORD:-taller123}@db-facturacion:5432/db_facturacion
+      ORDENES_URL: http://ms-ordenes:8003
+      INVENTARIO_URL: http://ms-inventario:8005
+    ports: ["8006:8006"]
+    depends_on:
+      db-facturacion: {condition: service_healthy}
+
+  # ---------- MS7: Reportes, notificaciones y auditoría ----------
+  db-reportes:
+    image: postgres:16
+    container_name: db-reportes
+    environment:
+      <<: *db-env
+      POSTGRES_DB: db_reportes
+    ports: ["5438:5432"]
+    volumes: [pgdata-reportes:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -U ${DB_USER:-taller} -d db_reportes"]
+      interval: 5s
+      retries: 20
+      start_period: 10s
+
+  ms-reportes:
+    build: ./ms-reportes
+    container_name: ms-reportes
+    restart: on-failure
+    environment:
+      <<: *jwt
+      DATABASE_URL: postgresql+psycopg://${DB_USER:-taller}:${DB_PASSWORD:-taller123}@db-reportes:5432/db_reportes
+      CLIENTES_URL: http://ms-clientes:8002
+      ORDENES_URL: http://ms-ordenes:8003
+      REPARACIONES_URL: http://ms-reparaciones:8004
+      INVENTARIO_URL: http://ms-inventario:8005
+      FACTURACION_URL: http://ms-facturacion:8006
+    ports: ["8007:8007"]
+    depends_on:
+      db-reportes: {condition: service_healthy}
+
+  # ---------- Interfaz web (React + nginx) ----------
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    restart: unless-stopped
+    ports: ["5173:80"]          # Abrir http://localhost:5173
+    depends_on: [ms-usuarios, ms-clientes, ms-ordenes, ms-reparaciones, ms-inventario, ms-facturacion, ms-reportes]
+
+volumes:
+  pgdata-usuarios:
+  pgdata-clientes:
+  pgdata-ordenes:
+  pgdata-reparaciones:
+  pgdata-inventario:
+  pgdata-facturacion:
+  pgdata-reportes:

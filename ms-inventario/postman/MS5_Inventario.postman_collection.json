@@ -1,0 +1,1295 @@
+{
+  "info": {
+    "name": "MS5 - Inventario y repuestos",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8005"
+    },
+    {
+      "key": "auth_url",
+      "value": "http://127.0.0.1:8001"
+    },
+    {
+      "key": "ordenes_url",
+      "value": "http://127.0.0.1:8003"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "id_repuesto",
+      "value": ""
+    },
+    {
+      "key": "facturacion_url",
+      "value": "http://127.0.0.1:8006"
+    },
+    {
+      "key": "id_presupuesto",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "health"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Login inventario en MS1 (guarda token)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{auth_url}}/auth/login",
+          "host": [
+            "{{auth_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "inventario"
+            },
+            {
+              "key": "password",
+              "value": "Inventario123*"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Login 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set(\"token\", pm.response.json().access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Registrar repuesto (stock inicial 3)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/repuestos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "repuestos"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"codigo\": \"CABLE-HDMI-2M\",\n  \"nombre\": \"Cable HDMI 2 metros\",\n  \"categoria\": \"cables\",\n  \"marca\": \"Genérico\",\n  \"precio_costo\": 8000,\n  \"precio_venta\": 18000,\n  \"stock_minimo\": 2,\n  \"stock_inicial\": 3\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 201 o 409\", () => pm.expect(pm.response.code).to.be.oneOf([201, 409]));",
+              "if (pm.response.code === 201) pm.collectionVariables.set(\"id_repuesto\", pm.response.json().id_repuesto);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Código duplicado (409)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/repuestos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "repuestos"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"codigo\": \"CABLE-HDMI-2M\",\n  \"nombre\": \"Duplicado\",\n  \"categoria\": \"cables\",\n  \"precio_costo\": 1,\n  \"precio_venta\": 1\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 409\", () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Buscar id del repuesto creado",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/repuestos?buscar=CABLE-HDMI-2M",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "repuestos"
+          ],
+          "query": [
+            {
+              "key": "buscar",
+              "value": "CABLE-HDMI-2M"
+            }
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set(\"id_repuesto\", pm.response.json()[0].id_repuesto);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Consultar existencias",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/repuestos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "repuestos"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Registrar entrada (compra de 5)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/repuestos/{{id_repuesto}}/entradas",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "repuestos",
+            "{{id_repuesto}}",
+            "entradas"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cantidad\": 5,\n  \"costo_unitario\": 7500,\n  \"motivo\": \"Compra a proveedor\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 201\", () => pm.response.to.have.status(201));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Ajuste negativo con motivo",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/repuestos/{{id_repuesto}}/ajustes",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "repuestos",
+            "{{id_repuesto}}",
+            "ajustes"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tipo\": \"NEGATIVO\",\n  \"cantidad\": 1,\n  \"motivo\": \"Conteo físico: 1 cable dañado\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 201\", () => pm.response.to.have.status(201));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 Ajuste sin motivo (422)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/repuestos/{{id_repuesto}}/ajustes",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "repuestos",
+            "{{id_repuesto}}",
+            "ajustes"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tipo\": \"NEGATIVO\",\n  \"cantidad\": 1\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 422\", () => pm.response.to.have.status(422));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Repuestos con stock bajo",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/repuestos/stock-bajo",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "repuestos",
+            "stock-bajo"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 Login tecnico1 en MS1 (guarda token)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{auth_url}}/auth/login",
+          "host": [
+            "{{auth_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "tecnico1"
+            },
+            {
+              "key": "password",
+              "value": "Tecnico123*"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Login 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set(\"token\", pm.response.json().access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 Técnico intenta registrar repuesto (403)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/repuestos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "repuestos"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"codigo\": \"NO-PERMITIDO\",\n  \"nombre\": \"No permitido\",\n  \"categoria\": \"otros\",\n  \"precio_costo\": 1,\n  \"precio_venta\": 1\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 403\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 MS3: orden 2 a ESPERANDO_APROBACION",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{ordenes_url}}/ordenes/2/estado",
+          "host": [
+            "{{ordenes_url}}"
+          ],
+          "path": [
+            "ordenes",
+            "2",
+            "estado"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estado\": \"ESPERANDO_APROBACION\",\n  \"observacion\": \"Presupuesto enviado\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200 o 400\", () => pm.expect(pm.response.code).to.be.oneOf([200, 400]));",
+              "// 400 es normal si ya la habías movido en una ejecución anterior"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 MS6: presupuesto para la orden 2",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{facturacion_url}}/presupuestos",
+          "host": [
+            "{{facturacion_url}}"
+          ],
+          "path": [
+            "presupuestos"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_orden\": 2,\n  \"mano_obra\": [\n    {\n      \"descripcion\": \"Revisión y mano de obra\",\n      \"horas\": 1,\n      \"valor_hora\": 40000\n    }\n  ],\n  \"repuestos\": [],\n  \"observaciones\": \"Presupuesto de prueba\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 201 o 400 o 409\", () => pm.expect(pm.response.code).to.be.oneOf([201, 400, 409]));",
+              "// 400/409 es normal si ya se creó en una ejecución anterior"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15 Login recepcion en MS1 (guarda token)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{auth_url}}/auth/login",
+          "host": [
+            "{{auth_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "recepcion"
+            },
+            {
+              "key": "password",
+              "value": "Recepcion123*"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set(\"token\", pm.response.json().access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16 MS6: buscar el presupuesto de la orden 2",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{facturacion_url}}/ordenes/2/presupuesto",
+          "host": [
+            "{{facturacion_url}}"
+          ],
+          "path": [
+            "ordenes",
+            "2",
+            "presupuesto"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set(\"id_presupuesto\", pm.response.json().id_presupuesto);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17 MS6: el cliente aprueba (orden 2 pasa a EN_REPARACION)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{facturacion_url}}/presupuestos/{{id_presupuesto}}/respuesta",
+          "host": [
+            "{{facturacion_url}}"
+          ],
+          "path": [
+            "presupuestos",
+            "{{id_presupuesto}}",
+            "respuesta"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"decision\": \"APROBADO\",\n  \"medio\": \"PRESENCIAL\",\n  \"nombre_responde\": \"Juan Martínez\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200 o 400\", () => pm.expect(pm.response.code).to.be.oneOf([200, 400]));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18 Login tecnico1 en MS1 (guarda token)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{auth_url}}/auth/login",
+          "host": [
+            "{{auth_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "tecnico1"
+            },
+            {
+              "key": "password",
+              "value": "Tecnico123*"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set(\"token\", pm.response.json().access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19 Usar 1 RAM en la orden 2 (descuenta stock)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/repuestos/1/salidas",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "repuestos",
+            "1",
+            "salidas"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cantidad\": 1,\n  \"id_orden\": 2,\n  \"motivo\": \"Ampliación de memoria\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 201\", () => pm.response.to.have.status(201));",
+              "pm.test(\"Stock bajó en 1\", () => { const d = pm.response.json(); pm.expect(d.stock_resultante).to.eql(d.stock_anterior - 1); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "20 Pedir más de lo que hay (400 stock insuficiente)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/repuestos/1/salidas",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "repuestos",
+            "1",
+            "salidas"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cantidad\": 999,\n  \"id_orden\": 2\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 400\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21 Salida en orden que no está en reparación (400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/repuestos/1/salidas",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "repuestos",
+            "1",
+            "salidas"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cantidad\": 1,\n  \"id_orden\": 1\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 400\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "22 Devolver 1 RAM no utilizada",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/repuestos/1/devoluciones",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "repuestos",
+            "1",
+            "devoluciones"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cantidad\": 1,\n  \"id_orden\": 2\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 201\", () => pm.response.to.have.status(201));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "23 Devolver más de lo usado (400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/repuestos/1/devoluciones",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "repuestos",
+            "1",
+            "devoluciones"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cantidad\": 50,\n  \"id_orden\": 2\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 400\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "24 Usar 1 pasta térmica en la orden 2",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/repuestos/6/salidas",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "repuestos",
+            "6",
+            "salidas"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cantidad\": 1,\n  \"id_orden\": 2\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 201\", () => pm.response.to.have.status(201));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "25 Kardex de la RAM",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/repuestos/1/movimientos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "repuestos",
+            "1",
+            "movimientos"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "26 Consumo de la orden 2 (para facturar)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/ordenes/2/consumo",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "ordenes",
+            "2",
+            "consumo"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Tiene materiales\", () => pm.expect(pm.response.json().total_materiales).to.be.above(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "27 Login recepcion en MS1 (guarda token)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{auth_url}}/auth/login",
+          "host": [
+            "{{auth_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "recepcion"
+            },
+            {
+              "key": "password",
+              "value": "Recepcion123*"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Login 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set(\"token\", pm.response.json().access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "28 Recepcionista intenta sacar repuestos (403)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/repuestos/1/salidas",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "repuestos",
+            "1",
+            "salidas"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cantidad\": 1,\n  \"id_orden\": 2\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 403\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

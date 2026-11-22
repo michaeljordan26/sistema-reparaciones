@@ -1,0 +1,1828 @@
+{
+  "info": {
+    "name": "MS6 - Presupuestos, facturación y pagos",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8006"
+    },
+    {
+      "key": "auth_url",
+      "value": "http://127.0.0.1:8001"
+    },
+    {
+      "key": "ordenes_url",
+      "value": "http://127.0.0.1:8003"
+    },
+    {
+      "key": "reparaciones_url",
+      "value": "http://127.0.0.1:8004"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "id_orden",
+      "value": ""
+    },
+    {
+      "key": "id_presupuesto",
+      "value": ""
+    },
+    {
+      "key": "id_reparacion",
+      "value": ""
+    },
+    {
+      "key": "id_factura",
+      "value": ""
+    },
+    {
+      "key": "saldo",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "health"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Login recepcion en MS1 (guarda token)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{auth_url}}/auth/login",
+          "host": [
+            "{{auth_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "recepcion"
+            },
+            {
+              "key": "password",
+              "value": "Recepcion123*"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set(\"token\", pm.response.json().access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 MS3: recibir el portátil Lenovo (equipo 1)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{ordenes_url}}/ordenes",
+          "host": [
+            "{{ordenes_url}}"
+          ],
+          "path": [
+            "ordenes"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_equipo\": 1,\n  \"descripcion_problema\": \"El portátil está muy lento y se apaga solo\",\n  \"accesorios_recibidos\": \"Cargador\",\n  \"prioridad\": \"ALTA\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 201\", () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set(\"id_orden\", pm.response.json().id_orden);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 MS3: asignar técnico 1",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{ordenes_url}}/ordenes/{{id_orden}}/asignar",
+          "host": [
+            "{{ordenes_url}}"
+          ],
+          "path": [
+            "ordenes",
+            "{{id_orden}}",
+            "asignar"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_tecnico\": 1\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Login tecnico1 en MS1 (guarda token)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{auth_url}}/auth/login",
+          "host": [
+            "{{auth_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "tecnico1"
+            },
+            {
+              "key": "password",
+              "value": "Tecnico123*"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set(\"token\", pm.response.json().access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 MS3: iniciar diagnóstico",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{ordenes_url}}/ordenes/{{id_orden}}/estado",
+          "host": [
+            "{{ordenes_url}}"
+          ],
+          "path": [
+            "ordenes",
+            "{{id_orden}}",
+            "estado"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estado\": \"EN_DIAGNOSTICO\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 MS4: registrar diagnóstico (orden a ESPERANDO_APROBACION)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{reparaciones_url}}/diagnosticos",
+          "host": [
+            "{{reparaciones_url}}"
+          ],
+          "path": [
+            "diagnosticos"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_orden\": \"{{id_orden}}\",\n  \"hallazgos\": \"Memoria RAM insuficiente y ventilador obstruido por polvo\",\n  \"causa_probable\": \"Sobrecalentamiento y poca memoria\",\n  \"solucion_propuesta\": \"Limpieza interna y ampliar RAM a 16 GB\",\n  \"requiere_repuestos\": true,\n  \"tiempo_estimado_horas\": 2\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 201\", () => pm.response.to.have.status(201));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Crear presupuesto (2 líneas de mano de obra + 1 RAM)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/presupuestos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "presupuestos"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_orden\": \"{{id_orden}}\",\n  \"mano_obra\": [\n    {\n      \"descripcion\": \"Limpieza interna y cambio de pasta térmica\",\n      \"horas\": 1,\n      \"valor_hora\": 40000\n    },\n    {\n      \"descripcion\": \"Instalación de memoria y pruebas\",\n      \"horas\": 0.5,\n      \"valor_hora\": 40000\n    }\n  ],\n  \"repuestos\": [\n    {\n      \"id_repuesto\": 1,\n      \"cantidad\": 1\n    }\n  ],\n  \"observaciones\": \"Válido por 15 días\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 201\", () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set(\"id_presupuesto\", pm.response.json().id_presupuesto);",
+              "const p = pm.response.json();",
+              "pm.test(\"Mano de obra = 60.000\", () => pm.expect(p.subtotal_mano_obra).to.eql(60000));",
+              "pm.test(\"Materiales = precio de la RAM\", () => pm.expect(p.subtotal_materiales).to.eql(130000));",
+              "pm.test(\"Total = subtotal + IVA 19%\", () => pm.expect(p.total).to.eql(p.subtotal + p.iva));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 Segundo presupuesto para la misma orden (409)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/presupuestos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "presupuestos"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_orden\": \"{{id_orden}}\",\n  \"mano_obra\": [\n    {\n      \"descripcion\": \"Duplicado\",\n      \"horas\": 1,\n      \"valor_hora\": 1\n    }\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 409\", () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Técnico intenta registrar la aprobación del cliente (403)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/presupuestos/{{id_presupuesto}}/respuesta",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "presupuestos",
+            "{{id_presupuesto}}",
+            "respuesta"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"decision\": \"APROBADO\",\n  \"nombre_responde\": \"Yo mismo\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 403\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 Login recepcion en MS1 (guarda token)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{auth_url}}/auth/login",
+          "host": [
+            "{{auth_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "recepcion"
+            },
+            {
+              "key": "password",
+              "value": "Recepcion123*"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set(\"token\", pm.response.json().access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 MS3: pasar a reparación sin aprobación (400)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{ordenes_url}}/ordenes/{{id_orden}}/estado",
+          "host": [
+            "{{ordenes_url}}"
+          ],
+          "path": [
+            "ordenes",
+            "{{id_orden}}",
+            "estado"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estado\": \"EN_REPARACION\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 400\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 El cliente APRUEBA el presupuesto (orden a EN_REPARACION)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/presupuestos/{{id_presupuesto}}/respuesta",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "presupuestos",
+            "{{id_presupuesto}}",
+            "respuesta"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"decision\": \"APROBADO\",\n  \"medio\": \"WHATSAPP\",\n  \"nombre_responde\": \"María Rodríguez\",\n  \"observacion\": \"Aprobado por chat\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"APROBADO\", () => pm.expect(pm.response.json().estado).to.eql(\"APROBADO\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 Responder dos veces (400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/presupuestos/{{id_presupuesto}}/respuesta",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "presupuestos",
+            "{{id_presupuesto}}",
+            "respuesta"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"decision\": \"RECHAZADO\",\n  \"nombre_responde\": \"María Rodríguez\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 400\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15 Login tecnico1 en MS1 (guarda token)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{auth_url}}/auth/login",
+          "host": [
+            "{{auth_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "tecnico1"
+            },
+            {
+              "key": "password",
+              "value": "Tecnico123*"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set(\"token\", pm.response.json().access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16 MS4: iniciar reparación",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{reparaciones_url}}/reparaciones",
+          "host": [
+            "{{reparaciones_url}}"
+          ],
+          "path": [
+            "reparaciones"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_orden\": \"{{id_orden}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 201\", () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set(\"id_reparacion\", pm.response.json().id_reparacion);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17 MS4: usar 2 RAM (se presupuestó 1)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{reparaciones_url}}/reparaciones/{{id_reparacion}}/repuestos",
+          "host": [
+            "{{reparaciones_url}}"
+          ],
+          "path": [
+            "reparaciones",
+            "{{id_reparacion}}",
+            "repuestos"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_repuesto\": 1,\n  \"cantidad\": 2\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 201\", () => pm.response.to.have.status(201));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18 MS4: finalizar (orden a LISTO_ENTREGA)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{reparaciones_url}}/reparaciones/{{id_reparacion}}/finalizar",
+          "host": [
+            "{{reparaciones_url}}"
+          ],
+          "path": [
+            "reparaciones",
+            "{{id_reparacion}}",
+            "finalizar"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"actividades_realizadas\": \"Limpieza interna, pasta térmica y ampliación de RAM a 16 GB\",\n  \"resultado\": \"EXITOSA\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19 Login recepcion en MS1 (guarda token)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{auth_url}}/auth/login",
+          "host": [
+            "{{auth_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "recepcion"
+            },
+            {
+              "key": "password",
+              "value": "Recepcion123*"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set(\"token\", pm.response.json().access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "20 Saldo de la orden (aprobado, aún sin facturar)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/ordenes/{{id_orden}}/saldo",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "ordenes",
+            "{{id_orden}}",
+            "saldo"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Hay saldo\", () => pm.expect(pm.response.json().saldo_pendiente).to.be.above(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21 MS3: entregar sin factura (400)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{ordenes_url}}/ordenes/{{id_orden}}/estado",
+          "host": [
+            "{{ordenes_url}}"
+          ],
+          "path": [
+            "ordenes",
+            "{{id_orden}}",
+            "estado"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estado\": \"ENTREGADO\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 400\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "22 Login tecnico1 en MS1 (guarda token)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{auth_url}}/auth/login",
+          "host": [
+            "{{auth_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "tecnico1"
+            },
+            {
+              "key": "password",
+              "value": "Tecnico123*"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set(\"token\", pm.response.json().access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "23 Técnico intenta generar la factura (403)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/facturas",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "facturas"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_orden\": \"{{id_orden}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 403\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "24 Login caja en MS1 (guarda token)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{auth_url}}/auth/login",
+          "host": [
+            "{{auth_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "caja"
+            },
+            {
+              "key": "password",
+              "value": "Caja1234*"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set(\"token\", pm.response.json().access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "25 Generar factura (mano de obra presupuestada + repuestos REALES)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/facturas",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "facturas"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_orden\": \"{{id_orden}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 201\", () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set(\"id_factura\", pm.response.json().id_factura);",
+              "const f = pm.response.json();",
+              "pm.test(\"Factura 2 RAM (consumo real)\", () => pm.expect(f.subtotal_materiales).to.eql(260000));",
+              "pm.test(\"Estado PENDIENTE\", () => pm.expect(f.estado).to.eql(\"PENDIENTE\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "26 Factura duplicada (409)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/facturas",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "facturas"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_orden\": \"{{id_orden}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 409\", () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "27 Abono de $100.000 en efectivo",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/facturas/{{id_factura}}/pagos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "facturas",
+            "{{id_factura}}",
+            "pagos"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"monto\": 100000,\n  \"metodo\": \"EFECTIVO\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 201\", () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set(\"saldo\", pm.response.json().saldo_resultante);",
+              "pm.test(\"Es ABONO\", () => pm.expect(pm.response.json().tipo).to.eql(\"ABONO\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "28 Pago con tarjeta sin referencia (422)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/facturas/{{id_factura}}/pagos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "facturas",
+            "{{id_factura}}",
+            "pagos"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"monto\": 1000,\n  \"metodo\": \"TARJETA\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 422\", () => pm.response.to.have.status(422));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "29 Pago mayor al saldo (400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/facturas/{{id_factura}}/pagos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "facturas",
+            "{{id_factura}}",
+            "pagos"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"monto\": 99999999,\n  \"metodo\": \"EFECTIVO\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 400\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "30 Login recepcion en MS1 (guarda token)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{auth_url}}/auth/login",
+          "host": [
+            "{{auth_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "recepcion"
+            },
+            {
+              "key": "password",
+              "value": "Recepcion123*"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set(\"token\", pm.response.json().access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "31 MS3: entregar con saldo pendiente (400)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{ordenes_url}}/ordenes/{{id_orden}}/estado",
+          "host": [
+            "{{ordenes_url}}"
+          ],
+          "path": [
+            "ordenes",
+            "{{id_orden}}",
+            "estado"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estado\": \"ENTREGADO\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 400\", () => pm.response.to.have.status(400));",
+              "pm.test(\"Menciona el saldo\", () => pm.expect(pm.response.json().detail).to.include(\"saldo\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "32 Pagar el saldo restante por Nequi",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/facturas/{{id_factura}}/pagos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "facturas",
+            "{{id_factura}}",
+            "pagos"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"monto\": \"{{saldo}}\",\n  \"metodo\": \"NEQUI\",\n  \"referencia\": \"M-458712\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 201\", () => pm.response.to.have.status(201));",
+              "pm.test(\"Es PAGO_TOTAL\", () => pm.expect(pm.response.json().tipo).to.eql(\"PAGO_TOTAL\"));",
+              "pm.test(\"Saldo 0\", () => pm.expect(pm.response.json().saldo_resultante).to.eql(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "33 MS3: entregar el equipo (ahora sí)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{ordenes_url}}/ordenes/{{id_orden}}/estado",
+          "host": [
+            "{{ordenes_url}}"
+          ],
+          "path": [
+            "ordenes",
+            "{{id_orden}}",
+            "estado"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estado\": \"ENTREGADO\",\n  \"observacion\": \"Pagado y entregado\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "34 Login caja en MS1 (guarda token)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{auth_url}}/auth/login",
+          "host": [
+            "{{auth_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "caja"
+            },
+            {
+              "key": "password",
+              "value": "Caja1234*"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set(\"token\", pm.response.json().access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "35 Factura con sus pagos",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/facturas/{{id_factura}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "facturas",
+            "{{id_factura}}"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"PAGADA\", () => pm.expect(pm.response.json().estado).to.eql(\"PAGADA\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "36 Reporte de ingresos (últimos 30 días)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/reportes/ingresos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "reportes",
+            "ingresos"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "37 Reporte de cartera (facturas con saldo)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/reportes/cartera",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "reportes",
+            "cartera"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "38 Login tecnico1 en MS1 (guarda token)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{auth_url}}/auth/login",
+          "host": [
+            "{{auth_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "tecnico1"
+            },
+            {
+              "key": "password",
+              "value": "Tecnico123*"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set(\"token\", pm.response.json().access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "39 Técnico intenta ver ingresos (403)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/reportes/ingresos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "reportes",
+            "ingresos"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 403\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

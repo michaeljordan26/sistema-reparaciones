@@ -1,0 +1,959 @@
+{
+  "info": {
+    "name": "MS7 - Reportes, notificaciones y auditoría",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8007"
+    },
+    {
+      "key": "auth_url",
+      "value": "http://127.0.0.1:8001"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "health"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Login admin en MS1 (guarda token)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{auth_url}}/auth/login",
+          "host": [
+            "{{auth_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "admin"
+            },
+            {
+              "key": "password",
+              "value": "Admin123*"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set(\"token\", pm.response.json().access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Resumen de auditoría (últimas 24 h)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/auditoria/resumen",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auditoria",
+            "resumen"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Hay operaciones registradas\", () => pm.expect(pm.response.json().total_operaciones > 0).to.be.true);",
+              "pm.test(\"Registró accesos denegados (las pruebas 403)\", () => pm.expect(pm.response.json().accesos_denegados > 0).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Bitácora completa (últimos 20)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/auditoria?limite=20",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auditoria"
+          ],
+          "query": [
+            {
+              "key": "limite",
+              "value": "20"
+            }
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Trae registros\", () => pm.expect(pm.response.json().registros.length > 0).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Solo operaciones rechazadas",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/auditoria?solo_fallidos=true",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auditoria"
+          ],
+          "query": [
+            {
+              "key": "solo_fallidos",
+              "value": "true"
+            }
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Todas son fallidas\", () => pm.expect(pm.response.json().registros.every(r => r.exito === false)).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Operaciones de facturación",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/auditoria?servicio=ms-facturacion",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auditoria"
+          ],
+          "query": [
+            {
+              "key": "servicio",
+              "value": "ms-facturacion"
+            }
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Hay pagos registrados\", () => pm.expect(pm.response.json().registros.some(r => r.accion === 'Registrar pago')).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Un usuario intenta inventar un registro de auditoría (403)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auditoria/eventos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auditoria",
+            "eventos"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"servicio\": \"ms-ordenes\",\n  \"metodo\": \"DELETE\",\n  \"ruta\": \"/ordenes/1\",\n  \"ruta_plantilla\": \"/ordenes/{id_orden}\",\n  \"codigo_estado\": 200\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 403\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Panel del administrador (todas las secciones)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/reportes/panel",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "reportes",
+            "panel"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "const d = pm.response.json();",
+              "pm.test(\"Sección ordenes disponible\", () => pm.expect(d.ordenes.disponible).to.be.true);",
+              "pm.test(\"Sección finanzas disponible\", () => pm.expect(d.finanzas.disponible).to.be.true);",
+              "pm.test(\"Sección inventario disponible\", () => pm.expect(d.inventario.disponible).to.be.true);",
+              "pm.test(\"Sección garantias disponible\", () => pm.expect(d.garantias.disponible).to.be.true);",
+              "pm.test(\"Sección auditoria disponible\", () => pm.expect(d.auditoria.disponible).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 Reporte de órdenes pendientes y finalizadas",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/reportes/ordenes",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "reportes",
+            "ordenes"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Hay finalizadas\", () => pm.expect(pm.response.json().finalizadas > 0).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Reporte financiero (ingresos y cartera)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/reportes/finanzas",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "reportes",
+            "finanzas"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Hubo ingresos\", () => pm.expect(pm.response.json().ingresos.total > 0).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 Reporte de inventario (stock bajo)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/reportes/inventario",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "reportes",
+            "inventario"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Hay repuestos con stock bajo\", () => pm.expect(pm.response.json().stock_bajo.length > 0).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 Reporte de garantías",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/reportes/garantias",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "reportes",
+            "garantias"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 Login recepcion en MS1 (guarda token)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{auth_url}}/auth/login",
+          "host": [
+            "{{auth_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "recepcion"
+            },
+            {
+              "key": "password",
+              "value": "Recepcion123*"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set(\"token\", pm.response.json().access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 Notificaciones enviadas a los clientes",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/notificaciones",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "notificaciones"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Se generaron solas\", () => pm.expect(pm.response.json().length > 0).to.be.true);",
+              "pm.test(\"Incluye 'equipo listo'\", () => pm.expect(pm.response.json().some(n => n.tipo === 'LISTO_ENTREGA')).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15 Notificaciones de la orden 2",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/notificaciones?id_orden=2",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "notificaciones"
+          ],
+          "query": [
+            {
+              "key": "id_orden",
+              "value": "2"
+            }
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16 Reenviar la notificación de la orden 2",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/notificaciones/ordenes/2",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "notificaciones",
+            "ordenes",
+            "2"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17 Recepcionista intenta ver el panel (403)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/reportes/panel",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "reportes",
+            "panel"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 403\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18 Recepcionista intenta ver la auditoría (403)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/auditoria",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auditoria"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 403\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19 Login inventario en MS1 (guarda token)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{auth_url}}/auth/login",
+          "host": [
+            "{{auth_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "inventario"
+            },
+            {
+              "key": "password",
+              "value": "Inventario123*"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set(\"token\", pm.response.json().access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "20 Inventario ve su reporte",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/reportes/inventario",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "reportes",
+            "inventario"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21 Inventario intenta ver finanzas (403)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/reportes/finanzas",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "reportes",
+            "finanzas"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 403\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "22 Login tecnico1 en MS1 (guarda token)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{auth_url}}/auth/login",
+          "host": [
+            "{{auth_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "tecnico1"
+            },
+            {
+              "key": "password",
+              "value": "Tecnico123*"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set(\"token\", pm.response.json().access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "23 Técnico intenta ver notificaciones (403)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/notificaciones",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "notificaciones"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Código 403\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
