@@ -1,0 +1,118 @@
+# =====================================================================
+# MS2 - Clientes y equipos
+#   db-clientes   StatefulSet + Service: PostgreSQL 16 con disco propio (database per service)
+#   ms-clientes   Deployment + Service: la API FastAPI en el puerto 8002
+# =====================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-clientes
+  namespace: taller
+  labels: {app: db-clientes}
+spec:
+  clusterIP: None            # Service "headless": nombre DNS estable para el StatefulSet
+  selector: {app: db-clientes}
+  ports:
+    - {name: postgres, port: 5432}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: db-clientes
+  namespace: taller
+spec:
+  serviceName: db-clientes
+  replicas: 1
+  selector:
+    matchLabels: {app: db-clientes}
+  template:
+    metadata:
+      labels: {app: db-clientes, capa: datos}
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          ports:
+            - {containerPort: 5432}
+          env:
+            - {name: POSTGRES_DB, value: db_clientes}
+            - name: POSTGRES_USER
+              valueFrom: {secretKeyRef: {name: taller-secretos, key: DB_USER}}
+            - name: POSTGRES_PASSWORD
+              valueFrom: {secretKeyRef: {name: taller-secretos, key: DB_PASSWORD}}
+            - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+          readinessProbe:
+            exec: {command: ["sh", "-c", "pg_isready -h localhost -U $POSTGRES_USER -d $POSTGRES_DB"]}
+            periodSeconds: 5
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {memory: 512Mi}
+          volumeMounts:
+            - {name: datos, mountPath: /var/lib/postgresql/data}
+  volumeClaimTemplates:        # Kubernetes crea un disco persistente para esta base
+    - metadata:
+        name: datos
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests: {storage: 1Gi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ms-clientes
+  namespace: taller
+  labels: {app: ms-clientes}
+spec:
+  selector: {app: ms-clientes}
+  ports:
+    - {name: http, port: 8002, targetPort: 8002}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ms-clientes
+  namespace: taller
+spec:
+  replicas: 1                  # Para escalar:  kubectl scale deployment ms-clientes --replicas=3 -n taller
+  selector:
+    matchLabels: {app: ms-clientes}
+  template:
+    metadata:
+      labels: {app: ms-clientes, capa: aplicacion}
+    spec:
+      initContainers:          # No arranca la API hasta que su base de datos responda
+        - name: esperar-base
+          image: postgres:16
+          command: ["sh", "-c", "until pg_isready -h db-clientes -p 5432; do echo Esperando db-clientes...; sleep 2; done"]
+      containers:
+        - name: api
+          image: taller/ms-clientes:1.0
+          imagePullPolicy: Never   # Usa la imagen construida en este PC (no la busca en internet)
+          ports:
+            - {containerPort: 8002}
+          envFrom:
+            - configMapRef: {name: taller-config}
+          env:
+            - name: DB_USER
+              valueFrom: {secretKeyRef: {name: taller-secretos, key: DB_USER}}
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: taller-secretos, key: DB_PASSWORD}}
+            - name: JWT_SECRET_KEY
+              valueFrom: {secretKeyRef: {name: taller-secretos, key: JWT_SECRET_KEY}}
+            - name: DATABASE_URL
+              value: postgresql+psycopg://$(DB_USER):$(DB_PASSWORD)@db-clientes:5432/db_clientes
+          startupProbe:            # Da hasta 3 minutos para migraciones y datos de prueba
+            httpGet: {path: /health, port: 8002}
+            periodSeconds: 5
+            failureThreshold: 36
+          readinessProbe:          # Solo recibe tráfico cuando responde /health
+            httpGet: {path: /health, port: 8002}
+            periodSeconds: 10
+          livenessProbe:           # Si deja de responder, Kubernetes lo reinicia solo
+            httpGet: {path: /health, port: 8002}
+            periodSeconds: 20
+            failureThreshold: 3
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {memory: 512Mi}

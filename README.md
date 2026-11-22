@@ -39,3 +39,9 @@ Levanta 15 contenedores: 7 bases de datos, 7 microservicios y la interfaz (nginx
 | `docker compose down -v` | Apagar y **borrar** todos los datos |
 
 No mezcles este modo con `iniciar.bat`: usan los mismos puertos (5173 y 8001-8007).
+
+## Desplegar en Kubernetes (Sprint 6)
+
+Con Kubernetes activado en Docker Desktop, doble clic en **`k8s-iniciar.bat`**. Construye las imágenes,
+crea el Secret desde `.env` y aplica los manifiestos de `k8s/`. Abre **http://localhost:30173**.
+Para borrarlo: `k8s-detener.bat`. Detalles y comandos de demostración en [`k8s/README.md`](k8s/README.md).

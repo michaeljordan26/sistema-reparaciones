@@ -1,0 +1,39 @@
+# Configuración de nginx para la interfaz DENTRO de Kubernetes.
+# Reemplaza a frontend/nginx.conf (que usa el DNS de Docker, 127.0.0.11).
+# Aquí los Services tienen una IP fija (ClusterIP), así que nginx los resuelve al arrancar.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-nginx
+  namespace: taller
+data:
+  default.conf: |
+    server {
+        listen 80;
+        root /usr/share/nginx/html;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_read_timeout 60s;
+
+        location /api/usuarios/      { proxy_pass http://ms-usuarios:8001/; }
+        location /api/clientes/      { proxy_pass http://ms-clientes:8002/; }
+        location /api/ordenes/       { proxy_pass http://ms-ordenes:8003/; }
+        location /api/reparaciones/  { proxy_pass http://ms-reparaciones:8004/; }
+        location /api/inventario/    { proxy_pass http://ms-inventario:8005/; }
+        location /api/facturacion/   { proxy_pass http://ms-facturacion:8006/; }
+        location /api/reportes/      { proxy_pass http://ms-reportes:8007/; }
+
+        error_page 502 503 504 = @servicio_caido;
+        location @servicio_caido {
+            default_type application/json;
+            return 503 '{"detail":"El servicio no está disponible en este momento. Revise: kubectl get pods -n taller"}';
+        }
+
+        location /assets/ { expires 7d; add_header Cache-Control "public"; }
+        location / {
+            add_header Cache-Control "no-cache";
+            try_files $uri /index.html;
+        }
+    }

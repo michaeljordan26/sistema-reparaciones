@@ -1,0 +1,18 @@
+# Configuración NO secreta que comparten los microservicios.
+# Dentro de Kubernetes cada servicio se encuentra por el nombre de su Service.
+# Las claves (contraseñas y JWT) van en el Secret "taller-secretos",
+# que k8s-iniciar.bat crea a partir del archivo .env (nunca se sube a GitHub).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: taller-config
+  namespace: taller
+data:
+  CORS_ORIGINS: "http://localhost:30173"
+  AUDITORIA_URL: "http://ms-reportes:8007"
+  USUARIOS_URL: "http://ms-usuarios:8001"
+  CLIENTES_URL: "http://ms-clientes:8002"
+  ORDENES_URL: "http://ms-ordenes:8003"
+  REPARACIONES_URL: "http://ms-reparaciones:8004"
+  INVENTARIO_URL: "http://ms-inventario:8005"
+  FACTURACION_URL: "http://ms-facturacion:8006"

@@ -1,0 +1,8 @@
+# Espacio de nombres: agrupa todos los recursos del sistema.
+# Para borrar todo de una vez:  kubectl delete namespace taller
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: taller
+  labels:
+    app.kubernetes.io/part-of: sistema-reparaciones

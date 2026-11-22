@@ -1,0 +1,118 @@
+# =====================================================================
+# MS5 - Inventario y repuestos
+#   db-inventario   StatefulSet + Service: PostgreSQL 16 con disco propio (database per service)
+#   ms-inventario   Deployment + Service: la API FastAPI en el puerto 8005
+# =====================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-inventario
+  namespace: taller
+  labels: {app: db-inventario}
+spec:
+  clusterIP: None            # Service "headless": nombre DNS estable para el StatefulSet
+  selector: {app: db-inventario}
+  ports:
+    - {name: postgres, port: 5432}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: db-inventario
+  namespace: taller
+spec:
+  serviceName: db-inventario
+  replicas: 1
+  selector:
+    matchLabels: {app: db-inventario}
+  template:
+    metadata:
+      labels: {app: db-inventario, capa: datos}
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          ports:
+            - {containerPort: 5432}
+          env:
+            - {name: POSTGRES_DB, value: db_inventario}
+            - name: POSTGRES_USER
+              valueFrom: {secretKeyRef: {name: taller-secretos, key: DB_USER}}
+            - name: POSTGRES_PASSWORD
+              valueFrom: {secretKeyRef: {name: taller-secretos, key: DB_PASSWORD}}
+            - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+          readinessProbe:
+            exec: {command: ["sh", "-c", "pg_isready -h localhost -U $POSTGRES_USER -d $POSTGRES_DB"]}
+            periodSeconds: 5
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {memory: 512Mi}
+          volumeMounts:
+            - {name: datos, mountPath: /var/lib/postgresql/data}
+  volumeClaimTemplates:        # Kubernetes crea un disco persistente para esta base
+    - metadata:
+        name: datos
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests: {storage: 1Gi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ms-inventario
+  namespace: taller
+  labels: {app: ms-inventario}
+spec:
+  selector: {app: ms-inventario}
+  ports:
+    - {name: http, port: 8005, targetPort: 8005}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ms-inventario
+  namespace: taller
+spec:
+  replicas: 1                  # Para escalar:  kubectl scale deployment ms-inventario --replicas=3 -n taller
+  selector:
+    matchLabels: {app: ms-inventario}
+  template:
+    metadata:
+      labels: {app: ms-inventario, capa: aplicacion}
+    spec:
+      initContainers:          # No arranca la API hasta que su base de datos responda
+        - name: esperar-base
+          image: postgres:16
+          command: ["sh", "-c", "until pg_isready -h db-inventario -p 5432; do echo Esperando db-inventario...; sleep 2; done"]
+      containers:
+        - name: api
+          image: taller/ms-inventario:1.0
+          imagePullPolicy: Never   # Usa la imagen construida en este PC (no la busca en internet)
+          ports:
+            - {containerPort: 8005}
+          envFrom:
+            - configMapRef: {name: taller-config}
+          env:
+            - name: DB_USER
+              valueFrom: {secretKeyRef: {name: taller-secretos, key: DB_USER}}
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: taller-secretos, key: DB_PASSWORD}}
+            - name: JWT_SECRET_KEY
+              valueFrom: {secretKeyRef: {name: taller-secretos, key: JWT_SECRET_KEY}}
+            - name: DATABASE_URL
+              value: postgresql+psycopg://$(DB_USER):$(DB_PASSWORD)@db-inventario:5432/db_inventario
+          startupProbe:            # Da hasta 3 minutos para migraciones y datos de prueba
+            httpGet: {path: /health, port: 8005}
+            periodSeconds: 5
+            failureThreshold: 36
+          readinessProbe:          # Solo recibe tráfico cuando responde /health
+            httpGet: {path: /health, port: 8005}
+            periodSeconds: 10
+          livenessProbe:           # Si deja de responder, Kubernetes lo reinicia solo
+            httpGet: {path: /health, port: 8005}
+            periodSeconds: 20
+            failureThreshold: 3
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {memory: 512Mi}
