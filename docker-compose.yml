@@ -216,6 +216,22 @@ services:
     depends_on:
       db-reportes: {condition: service_healthy}
 
+  # ---------- Sprint 7: Data Warehouse (modelo en estrella) ----------
+  # Base analítica separada de las transaccionales. La llena dw/etl.py.
+  db-dw:
+    image: postgres:16
+    container_name: db-dw
+    environment:
+      <<: *db-env
+      POSTGRES_DB: db_dw
+    ports: ["5439:5432"]
+    volumes: [pgdata-dw:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -U ${DB_USER:-taller} -d db_dw"]
+      interval: 5s
+      retries: 20
+      start_period: 10s
+
   # ---------- Interfaz web (React + nginx) ----------
   frontend:
     build: ./frontend
@@ -232,3 +248,4 @@ volumes:
   pgdata-inventario:
   pgdata-facturacion:
   pgdata-reportes:
+  pgdata-dw:
