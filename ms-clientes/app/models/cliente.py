@@ -10,7 +10,7 @@ from app.database.session import Base
 class Cliente(Base):
     __tablename__ = "cliente"
     __table_args__ = (
-        # RN01: todo cliente se identifica de manera única
+        
         UniqueConstraint("tipo_documento", "numero_documento", name="uq_cliente_documento"),
         CheckConstraint("tipo_documento IN ('CC','CE','NIT','TI','PAS')", name="ck_cliente_tipo_doc"),
         CheckConstraint("estado IN ('ACTIVO','INACTIVO')", name="ck_cliente_estado"),
@@ -39,7 +39,6 @@ class Equipo(Base):
     )
 
     id_equipo: Mapped[int] = mapped_column(primary_key=True)
-    # RN02: cada equipo pertenece a un solo cliente. RESTRICT: no se borra un cliente con equipos.
     id_cliente: Mapped[int] = mapped_column(ForeignKey("cliente.id_cliente", ondelete="RESTRICT"), index=True)
     tipo_equipo: Mapped[str] = mapped_column(String(20))
     marca: Mapped[str] = mapped_column(String(50))

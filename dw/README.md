@@ -17,7 +17,7 @@
 
 ## Ejecutar (con Docker Compose encendido)
 
-1. `docker-iniciar.bat` (ahora son 16 contenedores: se agregó `db-dw`).
+1. `docker-iniciar.bat` (ahora son 17 contenedores: se agregaron `db-dw` y la réplica de facturación).
 2. **Una sola vez:** `dw-historico.bat` → unas 115 órdenes de junio a noviembre (2 a 4 minutos).
 3. `dw-etl.bat` → carga el Data Warehouse. Se puede repetir cuando haya datos nuevos.
 

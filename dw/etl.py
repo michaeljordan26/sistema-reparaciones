@@ -1,4 +1,4 @@
-"""ETL del taller: de las 7 bases OLTP (microservicios) al Data Warehouse en estrella (db_dw).
+"""ETL del taller: de las bases OLTP de los microservicios al Data Warehouse en estrella (db_dw).
 
     EXTRACT    lee las tablas de cada microservicio (solo lectura, SELECT)
     TRANSFORM  une los datos de bases distintas por sus ids, calcula indicadores
@@ -198,7 +198,7 @@ def cargar(tablas, inicio):
 def main():
     inicio = datetime.now(COL)
     t = time.perf_counter()
-    print("1/3 EXTRACT: leyendo las 7 bases de los microservicios")
+    print("1/3 EXTRACT: leyendo las 6 bases con datos de negocio (los reportes no se necesitan)")
     datos = extraer()
     print("2/3 TRANSFORM: armando dimensiones y hechos")
     tablas = transformar(datos)

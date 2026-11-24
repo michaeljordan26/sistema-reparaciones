@@ -164,8 +164,12 @@ services:
     environment:
       <<: *db-env
       POSTGRES_DB: db_facturacion
+    # Sprint 7: esta base es la PRIMARIA; acepta conexiones de replicación (replicacion/pg_hba.conf)
+    command: ["postgres", "-c", "hba_file=/etc/postgresql/pg_hba.conf"]
     ports: ["5437:5432"]
-    volumes: [pgdata-facturacion:/var/lib/postgresql/data]
+    volumes:
+      - pgdata-facturacion:/var/lib/postgresql/data
+      - ./replicacion/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -h localhost -U ${DB_USER:-taller} -d db_facturacion"]
       interval: 5s
@@ -216,6 +220,37 @@ services:
     depends_on:
       db-reportes: {condition: service_healthy}
 
+  # ---------- Sprint 7: réplica de solo lectura de db_facturacion ----------
+  # Replicación por streaming: copia la primaria con pg_basebackup y luego recibe cada cambio.
+  db-facturacion-replica:
+    image: postgres:16
+    container_name: db-facturacion-replica
+    user: postgres
+    environment:
+      PGPASSWORD: ${DB_PASSWORD:-taller123}
+      DB_USER: ${DB_USER:-taller}
+    entrypoint:
+      - bash
+      - -c
+      - |
+        if [ ! -s "$$PGDATA/PG_VERSION" ]; then
+          echo "Copiando la base primaria (pg_basebackup)..."
+          until pg_basebackup -h db-facturacion -U "$$DB_USER" -D "$$PGDATA" -R -X stream; do
+            echo "Esperando a db-facturacion..."; rm -rf "$$PGDATA"/*; sleep 3
+          done
+          chmod 0700 "$$PGDATA"
+        fi
+        exec postgres
+    ports: ["5440:5432"]
+    volumes: [pgdata-facturacion-replica:/var/lib/postgresql/data]
+    depends_on:
+      db-facturacion: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -U ${DB_USER:-taller} -d db_facturacion"]
+      interval: 5s
+      retries: 30
+      start_period: 20s
+
   # ---------- Sprint 7: Data Warehouse (modelo en estrella) ----------
   # Base analítica separada de las transaccionales. La llena dw/etl.py.
   db-dw:
@@ -249,3 +284,4 @@ volumes:
   pgdata-facturacion:
   pgdata-reportes:
   pgdata-dw:
+  pgdata-facturacion-replica:

@@ -1,4 +1,3 @@
-"""CU09 Registrar equipo, CU10 Consultar y actualizar equipo."""
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
