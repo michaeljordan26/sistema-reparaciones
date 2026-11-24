@@ -5,15 +5,15 @@ Arquitectura de microservicios con FastAPI, PostgreSQL (una base por servicio), 
 
 | # | Microservicio | Puerto API | Puerto BD | Estado |
 |---|---|---|---|---|
-| 1 | ms-usuarios – Usuarios y autenticación | 8001 | 5432 | ✅ |
-| 2 | ms-clientes – Clientes y equipos | 8002 | 5433 | ✅ |
-| 3 | ms-ordenes – Órdenes de trabajo | 8003 | 5434 | ✅ |
-| 4 | ms-reparaciones – Diagnósticos, reparaciones y garantías | 8004 | 5435 | ✅ |
-| 5 | ms-inventario – Inventario y repuestos | 8005 | 5436 | ✅ |
-| 6 | ms-facturacion – Presupuestos, facturación y pagos | 8006 | 5437 | ✅ |
-| 7 | ms-reportes – Reportes, notificaciones y auditoría | 8007 | 5438 | ✅ |
+| 1 | ms-usuarios – Usuarios y autenticación | 8001 | 5432 | 
+| 2 | ms-clientes – Clientes y equipos | 8002 | 5433 | 
+| 3 | ms-ordenes – Órdenes de trabajo | 8003 | 5434 | 
+| 4 | ms-reparaciones – Diagnósticos, reparaciones y garantías | 8004 | 5435 | 
+| 5 | ms-inventario – Inventario y repuestos | 8005 | 5436 | 
+| 6 | ms-facturacion – Presupuestos, facturación y pagos | 8006 | 5437 | 
+| 7 | ms-reportes – Reportes, notificaciones y auditoría | 8007 | 5438 | 
 
-| — | **frontend – Interfaz web (React + Bootstrap)** | **5173** | — | ✅ |
+| — | **frontend – Interfaz web (React + Bootstrap)** | **5173** | — | 
 
 Abrir la aplicación en **http://localhost:5173** (usuarios de prueba: `admin / Admin123*`,
 `recepcion / Recepcion123*`, `tecnico1 / Tecnico123*`, `caja / Caja1234*`, `inventario / Inventario123*`).
